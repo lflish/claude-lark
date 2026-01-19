@@ -2,12 +2,14 @@ version: '3.8'
 
 services:
   claude-bot:
+    # 使用公共镜像（推荐）
+    # image: ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
+
+    # 或者本地构建（需要先执行 ./build.sh）
     build:
       context: .
       dockerfile: Dockerfile
-    # 使用环境变量指定镜像标签，默认使用 latest
-    # 也可以手动指定版本: IMAGE_TAG=v1.0.0 docker-compose up -d
-    image: claude-bot:${IMAGE_TAG:-latest}
+    image: ${DOCKER_IMAGE_NAME:-ccr.ccs.tencentyun.com/claude/claude-lark}:${IMAGE_TAG:-v1.0.0-20260119}
     container_name: claude-bot
     restart: unless-stopped
     

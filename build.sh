@@ -11,11 +11,10 @@ fi
 # 生成时间戳 (格式: YYYYMMDD)
 TIMESTAMP=$(date +%Y%m%d)
 
-# 镜像名称
-IMAGE_NAME="claude-bot"
+# 镜像名称（腾讯云 CCR）
+IMAGE_NAME="ccr.ccs.tencentyun.com/claude/claude-lark"
 
-# 构建标签
-VERSION_TAG="v${VERSION}"
+# 构建标签（只保留带时间戳的版本）
 VERSION_TIME_TAG="v${VERSION}-${TIMESTAMP}"
 
 echo "=========================================="
@@ -25,16 +24,13 @@ echo "版本: ${VERSION}"
 echo "时间戳: ${TIMESTAMP}"
 echo ""
 echo "将创建以下标签:"
-echo "  - ${IMAGE_NAME}:${VERSION_TAG}"
 echo "  - ${IMAGE_NAME}:${VERSION_TIME_TAG}"
-echo "  - ${IMAGE_NAME}:latest"
 echo "=========================================="
 echo ""
 
-# 构建镜像并打上多个标签
+# 构建镜像
 docker build \
   -t ${IMAGE_NAME}:${VERSION_TIME_TAG} \
-  -t ${IMAGE_NAME}:latest \
   .
 
 if [ $? -eq 0 ]; then
@@ -43,11 +39,10 @@ if [ $? -eq 0 ]; then
   echo "✅ 构建成功！"
   echo "=========================================="
   echo "镜像标签:"
-  echo "  - ${IMAGE_NAME}:${VERSION_TAG}"
   echo "  - ${IMAGE_NAME}:${VERSION_TIME_TAG}"
-  echo "  - ${IMAGE_NAME}:latest"
   echo ""
   echo "查看镜像: docker images ${IMAGE_NAME}"
+  echo "推送镜像: docker push ${IMAGE_NAME}:${VERSION_TIME_TAG}"
   echo "运行容器: ./run.sh"
 else
   echo ""

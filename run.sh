@@ -1,16 +1,18 @@
 #!/bin/bash
 
-# 读取版本号
+# 读取版本号和生成时间戳
 if [ -f VERSION ]; then
   VERSION=$(cat VERSION | tr -d '[:space:]')
-  DEFAULT_TAG="v${VERSION}"
+  TIMESTAMP=$(date +%Y%m%d)
+  DEFAULT_TAG="v${VERSION}-${TIMESTAMP}"
 else
   DEFAULT_TAG="latest"
 fi
 
 # 支持通过参数指定镜像标签
 IMAGE_TAG=${1:-$DEFAULT_TAG}
-IMAGE_NAME="claude-bot"
+# 支持通过环境变量指定镜像名（方便本地测试使用 claude-bot）
+IMAGE_NAME=${DOCKER_IMAGE_NAME:-"ccr.ccs.tencentyun.com/claude/claude-lark"}
 
 # 加载 .env 文件中的环境变量
 if [ -f .env ]; then

@@ -5,9 +5,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
+[![Docker Image](https://img.shields.io/badge/docker%20image-ccr.ccs.tencentyun.com-blue)](https://cloud.tencent.com/product/tcr)
 [![GitHub stars](https://img.shields.io/github/stars/lflish/claude-lark?style=social)](https://github.com/lflish/claude-lark)
 
 **一个智能的飞书机器人，集成 Claude Code Agent AI，支持多轮对话和上下文记忆**
+
+📦 **公共镜像**: `ccr.ccs.tencentyun.com/claude/claude-lark`
 
 [功能特性](#-功能特性) • [快速开始](#-快速开始) • [配置说明](#️-配置说明) • [部署指南](#-部署方式对比) • [故障排查](#-故障排查)
 
@@ -70,6 +73,35 @@ graph LR
 - ✅ 部署 [claude-agent-http](https://github.com/lflish/claude-agent-http) 后端服务
 - ✅ 在[飞书开放平台](https://open.feishu.cn/)创建应用并获取凭证
 
+### ☁️ 使用公共镜像（最简单）
+
+直接从腾讯云容器镜像仓库拉取已构建好的镜像，无需本地构建：
+
+```bash
+# 1. 拉取最新镜像
+docker pull ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
+
+# 2. 配置环境变量
+cp env.example .env
+vim .env
+
+# 3. 运行容器
+docker run -d \
+  --name claude-bot \
+  --network host \
+  -e APP_ID=cli_xxxxx \
+  -e APP_SECRET=xxxxx \
+  -e CLAUDE_AGENT_URL=http://localhost:8000 \
+  -v ~/.claude-lark:/data/claude-lark \
+  --restart unless-stopped \
+  ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
+
+# 4. 查看日志
+docker logs -f claude-bot
+```
+
+> 💡 **提示**：镜像托管在腾讯云 CCR，国内访问速度快，无需配置镜像加速器。
+
 ### 🐳 使用 Docker Compose 部署（推荐）
 
 ```bash
@@ -84,32 +116,29 @@ docker-compose up -d
 docker-compose logs -f claude-bot
 ```
 
-### 📦 单独部署 claude-bot
+### 📦 自己构建镜像（可选）
 
-如果您已单独部署 claude-agent-http 服务：
+如果需要修改代码或自定义构建：
 
 ```bash
-# 1. 配置环境变量
+# 1. 克隆仓库
+git clone https://github.com/lflish/claude-lark.git
+cd claude-lark
+
+# 2. 配置环境变量
 cp env.example .env
 vim .env
 
-# 2. 构建镜像（自动生成版本标签）
+# 3. 构建镜像（自动生成带时间戳的版本标签）
 ./build.sh
-# 将生成三个标签: v1.0.0, v1.0.0-20260119, latest
+# 将生成标签: ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
 
-# 3. 启动服务（默认使用版本标签）
+# 4. 启动服务
 ./run.sh
 # 或指定特定版本: ./run.sh v1.0.0-20260119
-# 或使用 latest: ./run.sh latest
 
-# 或使用 docker 命令
-docker run -d \
-  --name claude-bot \
-  -e APP_ID=cli_xxxxx \
-  -e APP_SECRET=xxxxx \
-  -e CLAUDE_AGENT_URL=http://your-claude-agent-http:8000 \
-  --restart unless-stopped \
-  claude-bot:v1.0.0
+# 5. 推送到自己的镜像仓库（可选）
+docker push ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
 ```
 
 ### 🏷️ 版本管理
@@ -117,46 +146,52 @@ docker run -d \
 项目采用语义化版本号（Semantic Versioning）管理：
 
 **镜像标签策略：**
-- `v{VERSION}` - 版本号标签（如 `v1.0.0`）
 - `v{VERSION}-{TIMESTAMP}` - 版本+时间戳（如 `v1.0.0-20260119`）
-- `latest` - 最新版本（始终指向最新构建）
+- 每次构建生成唯一的时间戳标签，方便版本追溯和回滚
 
-**构建和使用：**
+**公共镜像仓库：**
+```bash
+# 查看可用版本
+docker search ccr.ccs.tencentyun.com/claude/claude-lark
+
+# 拉取指定版本
+docker pull ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
+```
+
+**自己构建镜像：**
 ```bash
 # 查看当前版本
 cat VERSION
 
-# 构建镜像（自动生成多个标签）
+# 构建镜像（自动生成带时间戳的标签）
 ./build.sh
 
 # 查看已构建的镜像
-docker images claude-bot
+docker images ccr.ccs.tencentyun.com/claude/claude-lark
 
 # 使用特定版本
-./run.sh v1.0.0              # 使用版本标签
-./run.sh v1.0.0-20260119     # 使用版本+时间戳
-./run.sh latest              # 使用 latest（不推荐生产环境）
+./run.sh v1.0.0-20260119
 
-# Docker Compose 指定版本
-IMAGE_TAG=v1.0.0 docker-compose up -d
+# 推送到自己的仓库
+docker push ccr.ccs.tencentyun.com/claude/claude-lark:v1.0.0-20260119
 ```
 
 **版本发布流程：**
 1. 更新 `VERSION` 文件
 2. 运行 `./build.sh` 构建新版本镜像
-3. 提交代码并创建 git tag：`git tag v1.0.0 && git push --tags`
+3. 推送到镜像仓库：`docker push ccr.ccs.tencentyun.com/claude/claude-lark:v{VERSION}-{TIMESTAMP}`
+4. 提交代码并创建 git tag：`git tag v1.0.0 && git push --tags`
 
 ### 📊 部署方式对比
 
-| 特性 | Docker Compose（推荐） | 单独部署 |
-|------|----------------------|---------|
-| **适用场景** | 开发测试、一键部署 | 生产环境、已有后端 |
-| **部署复杂度** | ⭐ 简单（一条命令） | ⭐⭐ 中等（分别部署） |
-| **资源消耗** | 较高（两个服务） | 较低（仅 bot） |
-| **网络配置** | Docker 内部网络 | 需配置外部访问 |
-| **后端地址** | `http://claude-agent-http:8000` | `http://host:port` |
-| **灵活性** | 较低 | ⭐⭐⭐ 高 |
-| **推荐度** | ⭐⭐⭐⭐⭐ 新手首选 | ⭐⭐⭐ 生产环境 |
+| 特性 | 公共镜像 | Docker Compose | 自己构建 |
+|------|---------|---------------|---------|
+| **适用场景** | 快速体验、生产环境 | 开发测试、一键部署 | 定制开发、私有部署 |
+| **部署复杂度** | ⭐ 最简单（拉取即用） | ⭐⭐ 简单（一条命令） | ⭐⭐⭐ 中等（需构建） |
+| **启动速度** | ⚡ 最快（无需构建） | 较快 | 较慢（需构建时间） |
+| **网络依赖** | 需访问 CCR | 本地网络 | 本地构建 |
+| **定制能力** | ❌ 不可修改 | ❌ 不可修改 | ✅ 完全可定制 |
+| **推荐度** | ⭐⭐⭐⭐⭐ 首选 | ⭐⭐⭐⭐ 开发测试 | ⭐⭐⭐ 高级用户 |
 
 ## ⚙️ 配置说明
 
@@ -494,6 +529,7 @@ Connection refused [Errno 111]
 - 🤖 [Claude Agent SDK](https://github.com/anthropics/anthropic-sdk-python) - Anthropic Claude Agent SDK
 - 📱 [飞书开放平台](https://open.feishu.cn/) - 官方开发文档
 - ☁️ [Claude API](https://docs.anthropic.com/) - Anthropic Claude API 文档
+- 📦 [腾讯云容器镜像服务](https://cloud.tencent.com/product/tcr) - 公共镜像托管平台
 
 ## 🤝 贡献
 
