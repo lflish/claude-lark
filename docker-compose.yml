@@ -5,7 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: claude-bot:latest
+    # 使用环境变量指定镜像标签，默认使用 latest
+    # 也可以手动指定版本: IMAGE_TAG=v1.0.0 docker-compose up -d
+    image: claude-bot:${IMAGE_TAG:-latest}
     container_name: claude-bot
     restart: unless-stopped
     
