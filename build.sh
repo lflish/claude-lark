@@ -33,7 +33,6 @@ echo ""
 
 # 构建镜像并打上多个标签
 docker build \
-  -t ${IMAGE_NAME}:${VERSION_TAG} \
   -t ${IMAGE_NAME}:${VERSION_TIME_TAG} \
   -t ${IMAGE_NAME}:latest \
   .
