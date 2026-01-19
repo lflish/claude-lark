@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  claude-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claude-bot:latest
+    container_name: claude-bot
+    restart: unless-stopped
+    
+    # 环境变量配置
+    environment:
+      - APP_ID=${APP_ID}
+      - APP_SECRET=${APP_SECRET}
+      - CLAUDE_AGENT_URL=${CLAUDE_AGENT_URL:-http://claude-agent-http:8000}
+      - CLAUDE_AGENT_TIMEOUT=${CLAUDE_AGENT_TIMEOUT:-120}
+      - SESSION_STORE_DIR=/data/claude-lark
+      # 可选：设置时区
+      - TZ=Asia/Shanghai
+
+    # 从 .env 文件加载环境变量
+    env_file:
+      - .env
+
+    # 会话映射存储挂载
+    volumes:
+      - ${LOCAL_SESSION_DIR:-~/.claude-lark}:/data/claude-lark
+    
+    # 网络配置
+    networks:
+      - claude-network
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # 依赖 claude-agent-http 服务（如果同时部署）
+    depends_on:
+      - claude-agent-http
+
+  # Claude Agent HTTP 后端服务
+  claude-agent-http:
+    image: claude-agent-http:latest
+    container_name: claude-agent-http
+    restart: unless-stopped
+    
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TZ=Asia/Shanghai
+    
+    # 暴露端口供调试（生产环境可移除）
+    ports:
+      - "8000:8000"
+    
+    # 工作目录挂载（用于文件操作）
+    volumes:
+      - ./workspaces:/home
+    
+    networks:
+      - claude-network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  claude-network:
+    driver: bridge
