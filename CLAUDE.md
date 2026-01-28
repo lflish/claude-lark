@@ -123,7 +123,7 @@ Environment variables (see `env.example`):
 - `CLAUDE_AGENT_URL`: Backend service URL (default: `http://localhost:8000`)
 
 **Optional:**
-- `CLAUDE_AGENT_TIMEOUT`: Request timeout in seconds (default: 120)
+- `CLAUDE_AGENT_TIMEOUT`: Request timeout in seconds (default: 300, recommend 300-600 for complex tasks)
 - `LOCAL_SESSION_DIR`: Host machine path for session storage (default: `~/.claude-lark`)
 - `ANTHROPIC_API_KEY`: Only needed if running claude-agent-http via docker-compose
 - Note: Container internal path is fixed at `/data/claude-lark`

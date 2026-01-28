@@ -203,8 +203,8 @@ APP_ID=cli_xxxxx              # 飞书应用 ID
 APP_SECRET=xxxxx              # 飞书应用密钥
 
 # Claude Agent HTTP 后端配置（必填）
-CLAUDE_AGENT_URL=http://localhost:8000  # 后端服务地址
-CLAUDE_AGENT_TIMEOUT=120                # 请求超时时间（秒）
+CLAUDE_AGENT_URL=http://claude-agent-http:8000  # Docker 网络使用服务名，本地开发使用 localhost:8000
+CLAUDE_AGENT_TIMEOUT=300                        # 请求超时时间（秒），建议 300-600
 
 # 会话存储配置（可选）
 LOCAL_SESSION_DIR=~/.claude-lark        # 宿主机存储路径（容器内固定为 /data/claude-lark）
@@ -259,7 +259,7 @@ defaults:
 - ✅ 不要将 `.env` 文件提交到版本控制
 
 **性能优化：**
-- ✅ 设置合理的 `CLAUDE_AGENT_TIMEOUT` 值
+- ✅ 设置合理的 `CLAUDE_AGENT_TIMEOUT` 值（300-600 秒，避免复杂任务超时）
 - ✅ 配置资源限制（CPU、内存）
 - ✅ 监控会话存储目录大小
 - ✅ 定期清理过期会话数据
