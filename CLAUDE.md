@@ -8,12 +8,13 @@ This is a Lark (Feishu/飞书) bot that integrates Claude AI capabilities throug
 
 ## Architecture
 
-The system consists of two main components:
+The system consists of two independently deployed components:
 
 1. **claude-bot** (this repository): Handles Lark message events via WebSocket and manages message routing
-2. **claude-agent-http**: External backend service that provides Claude API access and session management
+2. **claude-agent-http**: External backend service that provides Claude API access and session management (deployed separately)
 
 Key architecture patterns:
+- **Host network mode**: Bot container uses host network to directly access claude-agent-http via `127.0.0.1:8000`
 - **Immediate response pattern**: Messages are queued immediately to return HTTP 200 to Lark, preventing duplicate message delivery
 - **Asynchronous processing**: Background worker thread processes messages from a queue
 - **Session persistence**: Message IDs are mapped to Claude session IDs for multi-turn conversations
@@ -29,38 +30,26 @@ pip install -r requirements.txt
 # Run directly (ensure CLAUDE_AGENT_URL is accessible)
 export APP_ID=cli_xxxxx
 export APP_SECRET=xxxxx
-export CLAUDE_AGENT_URL=http://localhost:8000
+export CLAUDE_AGENT_URL=http://127.0.0.1:8000
 python main.py
 
 # Test the claude-agent-http client
 python handle.py
 ```
 
-### Docker Development
+### Docker Deployment
 ```bash
-# Build Docker image
-./build.sh
-# or: docker build -t claude-bot:latest .
+# Build and start
+docker-compose up -d --build
 
-# Run standalone container
-./run.sh
-
-# Use Docker Compose (includes claude-agent-http backend)
-docker-compose up -d
-docker-compose logs -f claude-bot
-docker-compose down
-```
-
-### Common Docker Commands
-```bash
 # View logs
 docker logs -f claude-bot
 
-# Restart service
+# Restart
 docker restart claude-bot
 
 # Stop and remove
-docker stop claude-bot && docker rm claude-bot
+docker-compose down
 ```
 
 ## Core Components
@@ -94,9 +83,8 @@ HTTP client wrapper for claude-agent-http backend:
   - `ask_claude_sync()`: Main entry point for synchronous chat
   - `get_session_id()`: Retrieve session by Lark message ID (uses memory cache)
   - `save_session_mapping(message_id, session_id, is_root=False)`: Persist message mapping
-    - `is_root=True`: Marks message as conversation root (永久保留)
+    - `is_root=True`: Marks message as conversation root
     - `is_root=False`: Adds to recent messages (sliding window, max 3)
-  - `get_or_create_session()`: Get existing or create new session with validation (deprecated)
 
 Session storage: Configured via `LOCAL_SESSION_DIR` in .env (host path, default: `~/.claude-lark`), mounted to `/data/claude-lark` in container.
 
@@ -120,12 +108,11 @@ Environment variables (see `env.example`):
 **Required:**
 - `APP_ID`: Lark application ID
 - `APP_SECRET`: Lark application secret
-- `CLAUDE_AGENT_URL`: Backend service URL (default: `http://localhost:8000`)
+- `CLAUDE_AGENT_URL`: Backend service URL (default: `http://127.0.0.1:8000`)
 
 **Optional:**
 - `CLAUDE_AGENT_TIMEOUT`: Request timeout in seconds (default: 300, recommend 300-600 for complex tasks)
 - `LOCAL_SESSION_DIR`: Host machine path for session storage (default: `~/.claude-lark`)
-- `ANTHROPIC_API_KEY`: Only needed if running claude-agent-http via docker-compose
 - Note: Container internal path is fixed at `/data/claude-lark`
 
 ## Message Context & Threading
@@ -154,19 +141,11 @@ Session lifecycle:
 2. If found: reuse session (maintains context)
 3. If not found: create new session via `client.create_session(user_id)`
 4. After response: save message mappings:
-   - `root_id` → marked as conversation root (永久保留)
+   - `root_id` → marked as conversation root
    - Current `message_id` → added to recent messages (sliding window)
    - Bot reply `message_id` → added to recent messages
-5. **Storage optimization**: Each session stores:
-   - 1 `root_id` (永久保留，用于查找对话线程)
-   - Up to 3 recent message IDs (滑动窗口，自动移除最旧的)
+5. **Storage optimization**: Each session stores 1 `root_id` + up to 3 recent message IDs
 6. LRU eviction: Old sessions automatically closed when exceeding 1000 sessions
-
-**Storage efficiency**: Compared to old format (all message IDs), new format reduces storage by ~70%:
-- Old: 10-message conversation = 10 mappings stored
-- New: 10-message conversation = 4 mappings stored (1 root + 3 recent)
-
-Session validation: Backend sessions are validated via `get_session()` before reuse.
 
 ## Error Handling
 
